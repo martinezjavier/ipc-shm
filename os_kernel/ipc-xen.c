@@ -14,6 +14,7 @@
 #include "ipc-hw.h"
 #include "ipc-shm.h"
 
+#define IPC_XEN_NAME	"ipc-shm-xen"
 #define DRIVER_VERSION	"0.1"
 
 /**
@@ -180,7 +181,7 @@ int8_t ipc_os_init(const uint8_t instance, const struct ipc_shm_cfg *cfg,
 
 	/* request and map local physical shared memory */
 	res = request_mem_region((phys_addr_t)cfg->local_shm_addr,
-				 cfg->shm_size, DRIVER_NAME" local");
+				 cfg->shm_size, IPC_XEN_NAME" local");
 	if (!res) {
 		shm_err("Unable to reserve local shm region\n");
 		return -EADDRINUSE;
@@ -195,7 +196,7 @@ int8_t ipc_os_init(const uint8_t instance, const struct ipc_shm_cfg *cfg,
 
 	/* request and map remote physical shared memory */
 	res = request_mem_region((phys_addr_t)cfg->remote_shm_addr,
-				 cfg->shm_size, DRIVER_NAME" remote");
+				 cfg->shm_size, IPC_XEN_NAME" remote");
 	if (!res) {
 		shm_err("Unable to reserve remote shm region\n");
 		err = -EADDRINUSE;
@@ -358,6 +359,6 @@ module_exit(shm_mod_exit);
 
 MODULE_AUTHOR("NXP");
 MODULE_LICENSE("Dual BSD/GPL");
-MODULE_ALIAS(DRIVER_NAME);
+MODULE_ALIAS(IPC_XEN_NAME);
 MODULE_DESCRIPTION("NXP Shared Memory Inter-Processor Communication Driver");
 MODULE_VERSION(DRIVER_VERSION);

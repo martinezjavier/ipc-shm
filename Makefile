@@ -1,6 +1,6 @@
 # SPDX-License-Identifier:	BSD-3-Clause
 #
-# Copyright 2018-2023 NXP
+# Copyright 2018-2024 NXP
 #
 
 MODULE_NAME := ipc-shm-dev
@@ -9,11 +9,17 @@ UIO_MODULE_NAME := ipc-shm-uio
 XEN_MODULE_NAME := ipc-shm-xen
 PLATFORM_FLAVOR ?= UNDEFINED
 EXTRA_CFLAGS ?=
+IPC_USE_XEN ?= UNDEFINED
 
 ifneq ($(KERNELRELEASE),)
 # kbuild part of makefile
 
-obj-m := $(MODULE_NAME).o $(CDEV_MODULE_NAME).o $(UIO_MODULE_NAME).o $(XEN_MODULE_NAME).o
+#obj-m := $(MODULE_NAME).o $(CDEV_MODULE_NAME).o $(UIO_MODULE_NAME).o $(XEN_MODULE_NAME).o
+ifneq ($(IPC_USE_XEN),YES)
+obj-m := $(MODULE_NAME).o $(CDEV_MODULE_NAME).o $(UIO_MODULE_NAME).o
+else
+obj-m := $(XEN_MODULE_NAME).o
+endif
 
 $(MODULE_NAME)-y := ipc-shm.o ipc-queue.o os_kernel/ipc-os.o
 $(XEN_MODULE_NAME)-y := ipc-shm.o ipc-queue.o os_kernel/ipc-xen.o

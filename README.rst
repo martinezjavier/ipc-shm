@@ -39,7 +39,7 @@ Note: the interrupt ID expected in the driver configuration is different from
 the corresponding processor exception number (used to register the interrupt
 handler). See the Reference Manual of each platform for specific information.
 
-The TX interrupt can be disabled by setting its ID to IPC_IRQ_NONE. 
+The TX interrupt can be disabled by setting its ID to IPC_IRQ_NONE.
 When disabled the remote application must check for incoming messages by invoking
 the function ipc_shm_poll_channels().
 
@@ -74,6 +74,9 @@ If using Linux IPCF Shared Memory User-space Driver, the user-space static libra
 The path to the kernel module in the target board rootfs can be overwritten
 at compile time by setting IPC_UIO_MODULE_DIR (for using uio driver) or
 IPC_CDEV_MODULE_DIR (for using character driver) variable from the caller.
+
+If using Linux IPCF Shared Memory XEN Driver, the IPC_USE_XEN=YES should be added
+at compile time.
 
 Cautions
 ========

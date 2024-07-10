@@ -4,7 +4,7 @@
 IPCF Shared Memory Sample Application with XEN hypervisor
 =========================================================
 
-:Copyright: 2023 NXP
+:Copyright: 2023-2024 NXP
 
 Overview
 ========
@@ -41,7 +41,8 @@ custom XEN setup is **xen-examples-dom0less-passthrough-gmac**::
 
     BRANCH:pn-ipc-shm="release/**IPCF_RELEASE_NAME**"
     SRCREV:pn-ipc-shm="${AUTOREV}"
-    DEMO_IPCF_APPS:pn-ipc-shm="sample sample_multi_instance sample_xen/dom0 sample_xen/dom0less"
+    DEMO_IPCF_APPS:pn-ipc-shm="sample_xen/dom0 sample_xen/dom0less"
+    EXTRA_OEMAKE:append:pn-ipc-shm=" IPC_USE_XEN=YES "
 
   where **IPCF_RELEASE_NAME** is the name of Inter-Platform Communication
   Framework release from Flexera catalog and replace the line with SRCREV
@@ -51,10 +52,10 @@ custom XEN setup is **xen-examples-dom0less-passthrough-gmac**::
     CONFIG_STATIC_SHM=y
   Modify sources/meta-alb/recipes-fsl/images/fsl-image-dom0less.bb and add::
     IMAGE_INSTALL += " devmem2 dtc bridge-utils ipc-shm"
-  
+
 3. Build fsl-image-auto::
 
-    time bitbake fsl-image-auto 2>&1
+    bitbake fsl-image-auto 2>&1
 
 
 Building manually
@@ -98,7 +99,7 @@ Running the application
 2. Boot Linux: see section "How to boot" from Auto Linux BSP user manual.
 
 3. Stop in uboot::
-  
+
   a. Load the boot script::
 
     ext4load mmc ${mmcdev}:${mmcpart_ext} ${script_addr} boot/${script}; source ${script_addr}
