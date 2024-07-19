@@ -23,9 +23,11 @@ int8_t ipc_queue_pop(struct ipc_queue *queue, void *buf)
 	uint32_t read; /* cache read index for thread-safety */
 	void *src;
 
-	if ((queue == NULL) || (buf == NULL)) {
+	if ((queue == NULL) || (buf == NULL))
 		return -EINVAL;
-	}
+
+	if ((queue->push_ring == NULL) || (queue->pop_ring == NULL))
+		return -EINVAL;
 
 	write = queue->pop_ring->write;
 
@@ -68,9 +70,11 @@ int8_t ipc_queue_push(struct ipc_queue *queue, const void *buf)
 	uint32_t read; /* cache read index for thread-safety */
 	void *dst;
 
-	if ((queue == NULL) || (buf == NULL)) {
+	if ((queue == NULL) || (buf == NULL))
 		return -EINVAL;
-	}
+
+	if ((queue->push_ring == NULL) || (queue->pop_ring == NULL))
+		return -EINVAL;
 
 	write = queue->push_ring->write;
 

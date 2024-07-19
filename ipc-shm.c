@@ -392,6 +392,9 @@ static uint32_t ipc_shm_rx(const uint8_t instance, int budget)
 	uint8_t more_work = 1;
 	uint8_t chan_id = 0u;
 
+	if (ipc_instance_is_free(instance) != IPC_SHM_INSTANCE_USED)
+		return 0;
+
 	/* fair channel handling algorithm */
 	while ((work < budget) && (more_work > 0)) {
 		chan_budget = (budget - work) / (num_chans);
@@ -724,22 +727,24 @@ static void ipc_shm_free_managed_channel(struct ipc_managed_channel *mchan)
 	uint16_t pool_id = 0;
 
 	if ((mchan->bd_queue.push_ring->sentinel
-			!= (uint64_t)IPC_QUEUE_INIT_DONE)
-		&& (mchan->bd_queue.push_ring->sentinel
-			!= (uint64_t)IPC_QUEUE_INIT_IN_PROGRESS))
-		return;
-	/* Free channel queue */
-	ipc_queue_free(&mchan->bd_queue);
-	/* Free the queues from all pools */
-	for (pool_id = 0; pool_id < mchan->num_pools; pool_id++) {
-		if (mchan->pools[pool_id]
-				.bd_queue.push_ring == NULL)
-			continue;
-		if ((mchan->pools[pool_id].bd_queue.push_ring->sentinel
-				== (uint64_t)IPC_QUEUE_INIT_DONE)
-			|| (mchan->pools[pool_id].bd_queue.push_ring->sentinel
-				== (uint64_t)IPC_QUEUE_INIT_IN_PROGRESS)) {
-			ipc_queue_free(&mchan->pools[pool_id].bd_queue);
+			== (uint64_t)IPC_QUEUE_INIT_DONE)
+		|| (mchan->bd_queue.push_ring->sentinel
+			== (uint64_t)IPC_QUEUE_INIT_IN_PROGRESS)) {
+		/* Free channel queue */
+		ipc_queue_free(&mchan->bd_queue);
+		/* Free the queues from all pools */
+		for (pool_id = 0; pool_id < mchan->num_pools; pool_id++) {
+			if (mchan->pools[pool_id]
+					.bd_queue.push_ring == NULL)
+				continue;
+			if ((mchan->pools[pool_id].bd_queue.push_ring->sentinel
+					== (uint64_t)IPC_QUEUE_INIT_DONE)
+				|| (mchan->pools[pool_id]
+						.bd_queue.push_ring->sentinel
+					== (uint64_t)
+						IPC_QUEUE_INIT_IN_PROGRESS)) {
+				ipc_queue_free(&mchan->pools[pool_id].bd_queue);
+			}
 		}
 	}
 }
@@ -772,6 +777,7 @@ static void ipc_shm_free_channel(const uint8_t instance, uint8_t chan_id,
 			uchan->local_mem->sentinel = 0;
 			uchan->local_mem->tx_count = 0;
 			uchan->local_mem->remote_tx_count = 0;
+			uchan->local_mem = NULL;
 		}
 	} else {
 	}
@@ -844,8 +850,10 @@ int8_t ipc_shm_init_instance(uint8_t instance, const struct ipc_shm_cfg *cfg)
 
 	/* init OS specific resources */
 	err = ipc_os_init(instance, cfg, ipc_shm_rx);
-	if (err != 0)
-		goto err_free_hw;
+	if (err != 0) {
+		ipc_hw_free(instance);
+		return err;
+	}
 
 	/* global data stored at beginning of local shared memory */
 	local_shm = ipc_os_get_local_shm(instance);
@@ -861,8 +869,19 @@ int8_t ipc_shm_init_instance(uint8_t instance, const struct ipc_shm_cfg *cfg)
 			chan_id++) {
 		err = ipc_shm_init_channels(instance, chan_id, local_chan_shm,
 				remote_chan_shm, &cfg->channels[chan_id]);
-		if (err != 0)
-			goto err_free_channel;
+		if (err != 0) {
+			ipc_shm_priv_data[instance].global = NULL;
+			ipc_os_free(instance);
+			ipc_hw_free(instance);
+			for (chan_id = 0; chan_id
+				< ipc_shm_priv_data[instance].num_channels;
+					chan_id++) {
+				if (cfg->channels != NULL)
+					ipc_shm_free_channel(instance, chan_id,
+						cfg->channels[chan_id].type);
+			}
+			return err;
+		}
 
 		/* compute next channel local/remote shm base address */
 		chan_size = get_chan_memmap_size(instance, chan_id);
@@ -877,18 +896,6 @@ int8_t ipc_shm_init_instance(uint8_t instance, const struct ipc_shm_cfg *cfg)
 	shm_dbg("ipc shm initialized\n");
 
 	return 0;
-
-err_free_channel:
-	for (chan_id = 0; chan_id < ipc_shm_priv_data[instance].num_channels;
-			chan_id++) {
-		if (cfg->channels != NULL)
-			ipc_shm_free_channel(instance, chan_id,
-						cfg->channels[chan_id].type);
-	}
-	ipc_os_free(instance);
-err_free_hw:
-	ipc_hw_free(instance);
-	return err;
 }
 
 void ipc_shm_free_instance(const uint8_t instance)
@@ -902,6 +909,12 @@ void ipc_shm_free_instance(const uint8_t instance)
 	ipc_shm_priv_data[instance].global->state = IPC_SHM_STATE_CLEAR;
 	ipc_shm_priv_data[instance].global = NULL;
 
+	/* disable hardirq */
+	ipc_hw_irq_disable(instance);
+
+	/* Free OS and HW for the specified instance */
+	ipc_os_free(instance);
+
 	/* Free all channels from the specified instance */
 	for (chan_id = 0;
 			chan_id < ipc_shm_priv_data[instance].num_channels;
@@ -910,11 +923,6 @@ void ipc_shm_free_instance(const uint8_t instance)
 			ipc_shm_priv_data[instance].channels[chan_id].type);
 	}
 
-	/* disable hardirq */
-	ipc_hw_irq_disable(instance);
-
-	/* Free OS and HW for the specified instance */
-	ipc_os_free(instance);
 	ipc_hw_free(instance);
 }
 
@@ -1054,9 +1062,8 @@ int8_t ipc_shm_release_buf(const uint8_t instance, uint8_t chan_id,
 	int8_t err;
 
 	/* check if instance is valid */
-	if (ipc_instance_is_free(instance) != IPC_SHM_INSTANCE_USED) {
+	if (ipc_instance_is_free(instance) != IPC_SHM_INSTANCE_USED)
 		return -EINVAL;
-	}
 
 	chan = get_managed_chan(instance, chan_id);
 	if ((chan == NULL) || (buf == NULL)
