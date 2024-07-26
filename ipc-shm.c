@@ -871,8 +871,6 @@ int8_t ipc_shm_init_instance(uint8_t instance, const struct ipc_shm_cfg *cfg)
 				remote_chan_shm, &cfg->channels[chan_id]);
 		if (err != 0) {
 			ipc_shm_priv_data[instance].global = NULL;
-			ipc_os_free(instance);
-			ipc_hw_free(instance);
 			for (chan_id = 0; chan_id
 				< ipc_shm_priv_data[instance].num_channels;
 					chan_id++) {
@@ -880,6 +878,8 @@ int8_t ipc_shm_init_instance(uint8_t instance, const struct ipc_shm_cfg *cfg)
 					ipc_shm_free_channel(instance, chan_id,
 						cfg->channels[chan_id].type);
 			}
+			ipc_os_free(instance);
+			ipc_hw_free(instance);
 			return err;
 		}
 
@@ -912,9 +912,6 @@ void ipc_shm_free_instance(const uint8_t instance)
 	/* disable hardirq */
 	ipc_hw_irq_disable(instance);
 
-	/* Free OS and HW for the specified instance */
-	ipc_os_free(instance);
-
 	/* Free all channels from the specified instance */
 	for (chan_id = 0;
 			chan_id < ipc_shm_priv_data[instance].num_channels;
@@ -923,6 +920,8 @@ void ipc_shm_free_instance(const uint8_t instance)
 			ipc_shm_priv_data[instance].channels[chan_id].type);
 	}
 
+	/* Free OS and HW for the specified instance */
+	ipc_os_free(instance);
 	ipc_hw_free(instance);
 }
 
