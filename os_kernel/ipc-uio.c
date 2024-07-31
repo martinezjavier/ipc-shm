@@ -192,6 +192,24 @@ static int ipc_uio_init(struct ipc_uio_cdev_data *data)
 	return 0;
 }
 
+static int ipc_uio_free(struct ipc_uio_cdev_data *data)
+{
+	int err = -EINVAL;
+	uint8_t inst = data->instance;
+
+	if ((inst < IPC_SHM_MAX_INSTANCES)
+		&& (ipc_pdev_priv.uio_id[inst].state
+			== IPC_SHM_INSTANCE_ENABLED)
+		&& (ipc_pdev_priv.irq_num_init[inst]
+			!= IPC_IRQ_NONE)) {
+		uio_unregister_device(&ipc_pdev_priv.uio_id[inst].info);
+		ipc_pdev_priv.irq_num_init[inst] = IPC_IRQ_NONE;
+		err = 0;
+	}
+
+	return err;
+}
+
 /**
  * ipc_cdev_open() - open operation will respond to a open request
  *                   from user-space
@@ -238,10 +256,18 @@ static ssize_t ipc_cdev_write(struct file *file, const char __user *user_buffer,
 		return -EINVAL;
 
 	ipc_pdev_priv.uio_id[data.instance].data = data;
-	err = ipc_uio_init(&ipc_pdev_priv.uio_id[data.instance].data);
-	if (err) {
-		shm_err("Failed to initialized UIO device\n");
-		return err;
+	if (data.cmd == IPC_UIO_INIT) {
+		err = ipc_uio_init(&ipc_pdev_priv.uio_id[data.instance].data);
+		if (err) {
+			shm_err("Failed to initialized UIO device\n");
+			return err;
+		}
+	} else if (data.cmd == IPC_UIO_FREE) {
+		err = ipc_uio_free(&ipc_pdev_priv.uio_id[data.instance].data);
+		if (err) {
+			shm_err("Failed to free UIO device\n");
+			return err;
+		}
 	}
 
 	return sizeof(struct ipc_uio_cdev_data);

@@ -318,6 +318,7 @@ int8_t ipc_os_init(const uint8_t instance, const struct ipc_shm_cfg *cfg,
 	/* Write data to char dev */
 	data_cfg.instance = instance;
 	data_cfg.cfg = *cfg;
+	data_cfg.cmd = IPC_UIO_INIT;
 
 	err = write(ipc_os_priv.ipc_cdev_fd, &data_cfg,
 		sizeof(struct ipc_uio_cdev_data));
@@ -416,6 +417,8 @@ void ipc_os_free(const uint8_t instance)
 {
 	void *res;
 	int i;
+	struct ipc_uio_cdev_data data_cfg;
+	int err;
 
 	ipc_os_priv.id[instance].state = IPC_SHM_INSTANCE_DISABLED;
 	if (ipc_os_priv.id[instance].irq_num != IPC_IRQ_NONE) {
@@ -427,6 +430,15 @@ void ipc_os_free(const uint8_t instance)
 		/* stop irq thread */
 		pthread_cancel(ipc_os_priv.id[instance].irq_thread_id);
 		pthread_join(ipc_os_priv.id[instance].irq_thread_id, &res);
+
+		/* unregister uio device */
+		data_cfg.instance = instance;
+		data_cfg.cmd = IPC_UIO_FREE;
+
+		err = write(ipc_os_priv.ipc_cdev_fd, &data_cfg,
+			sizeof(struct ipc_uio_cdev_data));
+		if (err < 0)
+			shm_err("Can't unregister uio device %d\n", err);
 
 		close(ipc_os_priv.id[instance].uio_fd);
 	}
