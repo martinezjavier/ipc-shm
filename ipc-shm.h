@@ -24,7 +24,8 @@ int8_t ipc_shm_init_instance(uint8_t instance, const struct ipc_shm_cfg *cfg);
  *
  * Function is non-reentrant.
  *
- * Return: 0 on success, error code otherwise
+ * Return: 0 on success (all instances were initialized with success or
+ * have been previously initialized), error code otherwise
  */
 int8_t ipc_shm_init(const struct ipc_shm_instances_cfg *cfg);
 

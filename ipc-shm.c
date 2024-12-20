@@ -993,7 +993,7 @@ void *ipc_shm_acquire_buf(const uint8_t instance,
 int8_t ipc_shm_init(const struct ipc_shm_instances_cfg *cfg)
 {
 	uint8_t instance_id = 0;
-	int err = -EINVAL;
+	int err = 0;
 
 	if (cfg == NULL) {
 		shm_err("NULL argument\n");
