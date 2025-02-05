@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
- * Copyright 2019-2024 NXP
+ * Copyright 2019-2025 NXP
  */
 #include <errno.h>
 #include <stdint.h>

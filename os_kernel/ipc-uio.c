@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
- * Copyright 2019,2021-2024 NXP
+ * Copyright 2019,2021-2025 NXP
  */
 #include <linux/module.h>
 #include <linux/platform_device.h>
@@ -137,7 +137,7 @@ static int ipc_uio_init(struct ipc_uio_cdev_data *data)
 
 	err = sprintf(ipc_pdev_priv.uio_id[instance].uio_name,
 			"instance_%d", instance);
-	/* init MSCM HW for MSI inter-core interrupts */
+	/* init Peripheral HW for inter-core interrupts */
 	err = ipc_hw_init(instance, cfg);
 	if (err)
 		return err;
@@ -145,7 +145,8 @@ static int ipc_uio_init(struct ipc_uio_cdev_data *data)
 	if (cfg->inter_core_rx_irq == IPC_IRQ_NONE)
 		return 0;
 	/* get Linux IRQ number */
-	irq = platform_get_irq(ipc_pdev_priv.ipc_pdev, cfg->inter_core_rx_irq);
+	irq = platform_get_irq(ipc_pdev_priv.ipc_pdev,
+		ipc_hw_get_rx_irq(instance));
 	if (irq < 0) {
 		shm_dbg("Failed to get IRQ\n");
 		return irq;

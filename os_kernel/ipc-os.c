@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
- * Copyright 2018-2024 NXP
+ * Copyright 2018-2025 NXP
  */
 #include <linux/ioport.h>
 #include <linux/io.h>
@@ -24,7 +24,6 @@
 #else
 	#error "Platform not supported"
 #endif
-
 
 /**
  * struct ipc_os_priv_instance - OS specific private data each instance
@@ -114,6 +113,34 @@ static irqreturn_t ipc_shm_hardirq(int irq, void *dev)
 	return IRQ_HANDLED;
 }
 
+static int8_t get_irq_number(const uint8_t instance,
+	const struct ipc_shm_cfg *cfg, int *irq_num)
+{
+	struct device_node *compatible_node = NULL;
+
+	/* get node with compatible string from device tree */
+	compatible_node = of_find_compatible_node(
+			NULL, NULL, DT_INTC_NODE_COMP);
+	if (!compatible_node) {
+		shm_err("Cannot find node with compatible %s in device tree\n",
+			DT_INTC_NODE_COMP);
+		return -ENXIO;
+	}
+	*irq_num = of_irq_get(compatible_node, ipc_hw_get_rx_irq(instance));
+	if (*irq_num <= 0) {
+		shm_err("Unable to decode node's IRQ\n");
+		of_node_put(compatible_node);
+		return -EINVAL;
+	}
+	shm_dbg("Rx IRQ of instance %d = %d\n",
+		instance, *irq_num);
+
+	/* release refcount to interrupt DT node */
+	of_node_put(compatible_node);
+
+	return 0;
+}
+
 /**
  * ipc_shm_os_init() - OS specific initialization code
  * @instance:	 instance id
@@ -125,7 +152,6 @@ static irqreturn_t ipc_shm_hardirq(int irq, void *dev)
 int8_t ipc_os_init(const uint8_t instance, const struct ipc_shm_cfg *cfg,
 		uint32_t (*rx_cb)(const uint8_t, int))
 {
-	struct device_node *mscm = NULL;
 	struct resource *res;
 	int err;
 	int i;
@@ -177,23 +203,10 @@ int8_t ipc_os_init(const uint8_t instance, const struct ipc_shm_cfg *cfg,
 	if (cfg->inter_core_rx_irq == IPC_IRQ_NONE) {
 		priv.id[instance].irq_num = IPC_IRQ_NONE;
 	} else {
-		/* get interrupt number from device tree */
-		mscm = of_find_compatible_node(NULL, NULL, DT_INTC_NODE_COMP);
-		if (!mscm) {
-			shm_err("Unable to find MSCM node in device tree\n");
-			err = -ENXIO;
+		err = get_irq_number(instance, cfg, &priv.id[instance].irq_num);
+		if (err != 0) {
 			goto err_unmap_remote_shm;
 		}
-		priv.id[instance].irq_num
-			= of_irq_get(mscm, ipc_hw_get_rx_irq(instance));
-		if (priv.id[instance].irq_num <= 0) {
-			shm_err("Unable decode node’s IRQ\n");
-			err = -EINVAL;
-			goto err_unmap_remote_shm;
-		}
-		shm_dbg("Rx IRQ of instance %d = %d\n",
-			instance, priv.id[instance].irq_num);
-		of_node_put(mscm); /* release refcount to mscm DT node */
 	}
 
 	/* check duplicate irq number */
@@ -259,9 +272,9 @@ void ipc_os_free(const uint8_t instance)
 			/* only free irq if irq number is requested */
 			if (priv.id[instance].irq_num != 0) {
 				free_irq(priv.id[instance].irq_num, &priv);
-				priv.id[instance].irq_num = 0;
 			}
 		}
+		priv.id[instance].irq_num = 0;
 	}
 
 	iounmap((void *)priv.id[instance].remote_virt_shm);
@@ -292,6 +305,7 @@ uintptr_t ipc_os_get_remote_shm(const uint8_t instance)
  * ipc_os_map_intc() - I/O memory map interrupt controller register space
  *
  * I/O memory map the inter-core interrupts HW block (MSCM for ARM processors)
+ * or Mru HW block
  */
 void *ipc_os_map_intc(void)
 {
@@ -302,7 +316,7 @@ void *ipc_os_map_intc(void)
 	/* get DT node */
 	node = of_find_compatible_node(NULL, NULL, DT_INTC_NODE_COMP);
 	if (!node) {
-		shm_err("Unable to find MSCM node in device tree\n");
+		shm_err("Unable to find interrupt node in device tree\n");
 		return NULL;
 	}
 
@@ -310,7 +324,7 @@ void *ipc_os_map_intc(void)
 	err = of_address_to_resource(node, 0, &res);
 	of_node_put(node);
 	if (err) {
-		shm_err("Unable to read regs address from DT MSCM node\n");
+		shm_err("Unable to read regs address from DT interrupt node\n");
 		return NULL;
 	}
 
@@ -319,7 +333,7 @@ void *ipc_os_map_intc(void)
 }
 
 /**
- * ipc_os_map_intc() - I/O memory unmap interrupt controller register space
+ * ipc_os_unmap_intc() - I/O memory unmap interrupt controller register space
  */
 void ipc_os_unmap_intc(void *addr)
 {

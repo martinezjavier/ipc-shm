@@ -1,6 +1,6 @@
 # SPDX-License-Identifier:	BSD-3-Clause
 #
-# Copyright 2018,2021-2023 NXP
+# Copyright 2018,2021-2023,2025 NXP
 #
 
 MODULE_NAME := ipc-shm-sample

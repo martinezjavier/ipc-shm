@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
- * Copyright 2019-2024 NXP
+ * Copyright 2019-2025 NXP
  */
 #include <errno.h>
 #include <stdint.h>
@@ -490,7 +490,7 @@ int main(int argc, char *argv[])
 		printf("\nInput number of messages to send: ");
 		scanf("%d", &app.num_msgs);
 
-		if (!app.num_msgs)
+		if (app.num_msgs == 0)
 			break;
 
 		if ((ipcf_shm_instances_cfg
