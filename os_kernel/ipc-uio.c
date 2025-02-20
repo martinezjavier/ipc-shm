@@ -127,7 +127,10 @@ static irqreturn_t ipc_shm_uio_handler(int irq, struct uio_info *dev_info)
 /**
  * ipc_uio_init() - Initialize an UIO and ipcf hw
  * @ipc_uio_cdev_data:    Chrdev private data from user space
- * Return: 0 on Success, error code otherwise
+ *
+ * Return:
+ * * %0				- on success
+ * * %Negative error code	- On error
  */
 static int ipc_uio_init(struct ipc_uio_cdev_data *data)
 {
