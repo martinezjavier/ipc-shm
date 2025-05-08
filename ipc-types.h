@@ -53,128 +53,6 @@
 #define IPC_SHM_MAX_INSTANCES	4u
 #endif
 
-#ifdef PLATFORM_FLAVOR_s32n7
-
-/**
- * enum IPC_MRU_INSTANCE_ENUM_Type - MRU instance type
- * @IPC_MRU_APS_INSTANCE:   Present MRU in APS
- * @IPC_MRU_FSS_INSTANCE:   Present MRU in FSS
- * @IPC_MRU_RTU_INSTANCE:   Present MRU in RTU
- * @IPC_MRU_RCU_C_INSTANCE: Present MRU in RCU
- * @IPC_MRU_RCU_H_INSTANCE: Present MRU_H in RCU
- * @IPC_MRU_RCU_L_INSTANCE: Present MRU_L in RCU
- */
-typedef enum {
-	IPC_MRU_APS_INSTANCE,
-	IPC_MRU_FSS_INSTANCE,
-	IPC_MRU_RTU_INSTANCE,
-	IPC_MRU_RCU_C_INSTANCE,
-	IPC_MRU_RCU_H_INSTANCE,
-	IPC_MRU_RCU_L_INSTANCE,
-} IPC_MRU_INSTANCE_ENUM_Type;
-
-/**
- * enum IPC_MRU_INDEX_ENUM_Type - MRU instance index
- * @IPC_MRU_0:   MRU index 0
- * @IPC_MRU_1:   MRU index 1
- * @IPC_MRU_2:   MRU index 2
- * @IPC_MRU_3:   MRU index 3
- * @IPC_MRU_4:   MRU index 4
- * @IPC_MRU_5:   MRU index 5
- * @IPC_MRU_6:   MRU index 6
- * @IPC_MRU_7:   MRU index 7
- * @IPC_MRU_8:   MRU index 8
- * @IPC_MRU_9:   MRU index 9
- * @IPC_MRU_10:  MRU index 10
- * @IPC_MRU_11:  MRU index 11
- * @IPC_MRU_12:  MRU index 12
- * @IPC_MRU_13:  MRU index 13
- * @IPC_MRU_14:  MRU index 14
- * @IPC_MRU_15:  MRU index 15
- */
-typedef enum {
-	IPC_MRU_0,
-	IPC_MRU_1,
-	IPC_MRU_2,
-	IPC_MRU_3,
-	IPC_MRU_4,
-	IPC_MRU_5,
-	IPC_MRU_6,
-	IPC_MRU_7,
-	IPC_MRU_8,
-	IPC_MRU_9,
-	IPC_MRU_10,
-	IPC_MRU_11,
-	IPC_MRU_12,
-	IPC_MRU_13,
-	IPC_MRU_14,
-	IPC_MRU_15,
-} IPC_MRU_INDEX_ENUM_Type;
-
-/**
- * enum IPC_SUBSYSTEM_INDEX_ENUM_Type - Subsystem index
- * @IPC_SUBSYSTEM_0:   Subsystem index 0
- * @IPC_SUBSYSTEM_0:   Subsystem index 1
- * @IPC_SUBSYSTEM_0:   Subsystem index 2
- * @IPC_SUBSYSTEM_0:   Subsystem index 3
- * @IPC_SUBSYSTEM_0:   Subsystem index 4
- * @IPC_SUBSYSTEM_0:   Subsystem index 5
- * @IPC_SUBSYSTEM_0:   Subsystem index 6
- * @IPC_SUBSYSTEM_0:   Subsystem index 7
- *
- * For determine which MRU address is using in ipc-shm driver configuration
- */
-typedef enum {
-	IPC_SUBSYSTEM_0,
-	IPC_SUBSYSTEM_1,
-	IPC_SUBSYSTEM_2,
-	IPC_SUBSYSTEM_3,
-	IPC_SUBSYSTEM_4,
-	IPC_SUBSYSTEM_5,
-	IPC_SUBSYSTEM_6,
-	IPC_SUBSYSTEM_7,
-} IPC_SUBSYSTEM_INDEX_ENUM_Type;
-
-/**
- * enum IPC_MRU_CHANNEL_ENUM_Type - MRU channel index
- * @IPC_MRU_CHANNEL_0:   MRU channel index 0
- * @IPC_MRU_CHANNEL_1:   MRU channel index 1
- * @IPC_MRU_CHANNEL_2:   MRU channel index 2
- * @IPC_MRU_CHANNEL_3:   MRU channel index 3
- * @IPC_MRU_CHANNEL_4:   MRU channel index 4
- * @IPC_MRU_CHANNEL_5:   MRU channel index 5
- * @IPC_MRU_CHANNEL_6:   MRU channel index 6
- * @IPC_MRU_CHANNEL_7:   MRU channel index 7
- * @IPC_MRU_CHANNEL_8:   MRU channel index 8
- * @IPC_MRU_CHANNEL_9:   MRU channel index 9
- * @IPC_MRU_CHANNEL_10:  MRU channel index 10
- * @IPC_MRU_CHANNEL_11:  MRU channel index 11
- * @IPC_MRU_CHANNEL_12:  MRU channel index 12
- * @IPC_MRU_CHANNEL_13:  MRU channel index 13
- * @IPC_MRU_CHANNEL_14:  MRU channel index 14
- * @IPC_MRU_CHANNEL_15:  MRU channel index 15
- */
-typedef enum {
-	IPC_MRU_CHANNEL_0,
-	IPC_MRU_CHANNEL_1,
-	IPC_MRU_CHANNEL_2,
-	IPC_MRU_CHANNEL_3,
-	IPC_MRU_CHANNEL_4,
-	IPC_MRU_CHANNEL_5,
-	IPC_MRU_CHANNEL_6,
-	IPC_MRU_CHANNEL_7,
-	IPC_MRU_CHANNEL_8,
-	IPC_MRU_CHANNEL_9,
-	IPC_MRU_CHANNEL_10,
-	IPC_MRU_CHANNEL_11,
-	IPC_MRU_CHANNEL_12,
-	IPC_MRU_CHANNEL_13,
-	IPC_MRU_CHANNEL_14,
-	IPC_MRU_CHANNEL_15,
-} IPC_MRU_CHANNEL_ENUM_Type;
-
-#endif
-
 /**
  * enum ipc_shm_channel_type - channel type
  * @IPC_SHM_MANAGED:     channel with buffer management enabled
@@ -223,6 +101,7 @@ enum ipc_shm_core_type {
 	IPC_CORE_R52,
 	IPC_CORE_M33,
 	IPC_CORE_BBE32,
+	IPC_CORE_KQ8,
 };
 
 /**
