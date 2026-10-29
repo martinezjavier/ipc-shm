@@ -156,28 +156,29 @@ int8_t ipc_os_init(const uint8_t instance, const struct ipc_shm_cfg *cfg,
 		return -EINVAL;
 
 	/* request and map local physical shared memory */
+	pr_info("ipc-shm-dev: mapping local shm 0x%lx size 0x%x\n",
+		(unsigned long)cfg->local_shm_addr, cfg->shm_size);
 	res = request_mem_region((phys_addr_t)cfg->local_shm_addr,
 		cfg->shm_size, DRIVER_NAME" local");
-	if (!res) {
-		shm_err("Unable to reserve local shm region\n");
-		return -EADDRINUSE;
-	}
+	if (!res)
+		pr_warn("ipc-shm-dev: could not reserve local shm region, continuing anyway\n");
 
 	priv.id[instance].local_virt_shm
 		= (uintptr_t)ioremap_wc(cfg->local_shm_addr, cfg->shm_size);
+	pr_info("ipc-shm-dev: local shm mapped at %lx\n",
+		(unsigned long)priv.id[instance].local_virt_shm);
 	if (!priv.id[instance].local_virt_shm) {
 		err = -ENOMEM;
 		goto err_release_local_region;
 	}
 
 	/* request and map remote physical shared memory */
+	pr_info("ipc-shm-dev: mapping remote shm 0x%lx size 0x%x\n",
+		(unsigned long)cfg->remote_shm_addr, cfg->shm_size);
 	res = request_mem_region((phys_addr_t)cfg->remote_shm_addr,
 				 cfg->shm_size, DRIVER_NAME" remote");
-	if (!res) {
-		shm_err("Unable to reserve remote shm region\n");
-		err = -EADDRINUSE;
-		goto err_unmap_local_shm;
-	}
+	if (!res)
+		pr_warn("ipc-shm-dev: could not reserve remote shm region, continuing anyway\n");
 
 	priv.id[instance].remote_virt_shm
 		= (uintptr_t)ioremap_wc(cfg->remote_shm_addr, cfg->shm_size);
