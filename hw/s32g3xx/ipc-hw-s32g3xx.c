@@ -301,15 +301,11 @@ int8_t _ipc_hw_init(const uint8_t instance,
 	ipc_hw_priv[instance].mscm_rx_irq = cfg->inter_core_rx_irq;
 	ipc_hw_priv[instance].remote_core = remote_core_idx;
 	ipc_hw_priv[instance].local_core = local_core_idx;
-	/*
-	 * disable rx irq source to avoid receiving an interrupt from remote
-	 * before any of the buffer rings are initialized
-	 */
-	ipc_hw_irq_disable(instance);
 
 	/*
-	 * enable local trusted cores so that they can read full contents of
-	 * IRCPnISRx registers
+	 * Enable local trusted cores BEFORE accessing IRSPRC registers.
+	 * Without trusted cores set in IRCPCFG, IRSPRC accesses cause a
+	 * Synchronous External Abort on S32G3.
 	 */
 	ircpcfg_mask = readl(&ipc_hw_priv[instance].ipc_mscm->IRCPCFG);
 	if (ircpcfg_mask & IPC_MSCM_IRCPCFG_LOCK)
@@ -317,6 +313,12 @@ int8_t _ipc_hw_init(const uint8_t instance,
 
 	writel(ircpcfg_mask | trust_cores,
 		&(ipc_hw_priv[instance].ipc_mscm->IRCPCFG));
+
+	/*
+	 * disable rx irq source to avoid receiving an interrupt from remote
+	 * before any of the buffer rings are initialized
+	 */
+	ipc_hw_irq_disable(instance);
 
 	return 0;
 }
