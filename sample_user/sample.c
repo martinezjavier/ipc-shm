@@ -13,6 +13,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <pthread.h>
 
 #include "ipc-shm.h"
 #include "ipcf_Ip_Cfg.h"
@@ -359,6 +360,19 @@ static int run_demo(int num_msgs)
 	return 0;
 }
 
+static volatile int poll_thread_running;
+
+static void *poll_thread_func(void *arg)
+{
+	uint8_t instance = *(uint8_t *)arg;
+
+	while (poll_thread_running) {
+		ipc_shm_poll_channels(instance);
+		usleep(1000);
+	}
+	return NULL;
+}
+
 /*
  * interrupt signal handler for terminating the sample execution gracefully
  */
@@ -371,6 +385,7 @@ int main(int argc, char *argv[])
 {
 	int err = 0;
 	struct sigaction sig_action;
+	pthread_t poll_tid;
 
 	app.instance = 0;
 	sem_init(&app.sema, 0, 0);
@@ -379,6 +394,15 @@ int main(int argc, char *argv[])
 	err = init_ipc_shm();
 	if (err)
 		return err;
+
+	/* start polling thread for IPC_IRQ_NONE mode */
+	poll_thread_running = 1;
+	err = pthread_create(&poll_tid, NULL, poll_thread_func, &app.instance);
+	if (err) {
+		sample_err("failed to start polling thread\n");
+		ipc_shm_free();
+		return err;
+	}
 
 	/* catch interrupt signals to terminate the execution gracefully */
 	sig_action.sa_handler = int_handler;
@@ -396,6 +420,9 @@ int main(int argc, char *argv[])
 		if (err)
 			break;
 	}
+
+	poll_thread_running = 0;
+	pthread_join(poll_tid, NULL);
 
 	ipc_shm_free();
 
