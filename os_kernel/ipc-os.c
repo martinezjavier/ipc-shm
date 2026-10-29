@@ -164,7 +164,7 @@ int8_t ipc_os_init(const uint8_t instance, const struct ipc_shm_cfg *cfg,
 	}
 
 	priv.id[instance].local_virt_shm
-		= (uintptr_t)ioremap(cfg->local_shm_addr, cfg->shm_size);
+		= (uintptr_t)ioremap_wc(cfg->local_shm_addr, cfg->shm_size);
 	if (!priv.id[instance].local_virt_shm) {
 		err = -ENOMEM;
 		goto err_release_local_region;
@@ -180,7 +180,7 @@ int8_t ipc_os_init(const uint8_t instance, const struct ipc_shm_cfg *cfg,
 	}
 
 	priv.id[instance].remote_virt_shm
-		= (uintptr_t)ioremap(cfg->remote_shm_addr, cfg->shm_size);
+		= (uintptr_t)ioremap_wc(cfg->remote_shm_addr, cfg->shm_size);
 	if (!priv.id[instance].remote_virt_shm) {
 		err = -ENOMEM;
 		goto err_release_remote_region;
