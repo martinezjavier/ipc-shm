@@ -11,6 +11,7 @@
 #include <linux/completion.h>
 #include <linux/of_address.h>
 #include <linux/io.h>
+#include <linux/timer.h>
 
 #include "ipc-shm.h"
 #include "ipcf_Ip_Cfg.h"
@@ -68,6 +69,14 @@ const void *rx_cb_arg = &app;
 /* Completion variable used to sync send_msg func with shm_rx_cb */
 static DECLARE_COMPLETION(reply_received);
 
+static struct timer_list poll_timer;
+
+static void poll_timer_cb(struct timer_list *t)
+{
+	ipc_shm_poll_channels(app.instance);
+	mod_timer(&poll_timer, jiffies + 1);
+}
+
 /* Init IPC shared memory driver (see ipc-shm.h for API) */
 static int init_ipc_shm(void)
 {
@@ -78,6 +87,7 @@ static int init_ipc_shm(void)
 	} while (err == -EAGAIN);
 	if (err)
 		return err;
+
 	app.num_channels = ipcf_shm_instances_cfg.shm_cfg[0].num_channels;
 
 	/* acquire control channel memory once */
@@ -374,6 +384,10 @@ static int __init sample_mod_init(void)
 	if (err)
 		return err;
 
+	/* start polling timer for IPC_IRQ_NONE mode */
+	timer_setup(&poll_timer, poll_timer_cb, 0);
+	mod_timer(&poll_timer, jiffies + 1);
+
 	/* init sample sysfs UI */
 	err = init_sysfs();
 	if (err)
@@ -390,6 +404,7 @@ static void __exit sample_mod_exit(void)
 
 	sample_dbg("module version "MODULE_VER" exit\n");
 
+	del_timer_sync(&poll_timer);
 	free_sysfs();
 	ipc_shm_free();
 
